@@ -1,190 +1,88 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { roomsApi, roomTypesApi } from '../../api/rooms.api'
-import RoomCard from '../../components/rooms/RoomCard'
+﻿import { useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "react-router-dom"
+import { roomsApi, roomTypesApi } from "../../api/rooms.api"
+import RoomCard from "../../components/rooms/RoomCard"
 
 export default function RoomsPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [sp, setSp] = useSearchParams()
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState("")
+  const today = new Date().toISOString().split("T")[0]
+  const [f, setF] = useState({ checkIn:sp.get("checkIn")||"", checkOut:sp.get("checkOut")||"", guests:sp.get("guests")||"", minPrice:"", maxPrice:"" })
 
-  const { today, tomorrow } = useMemo(() => {
-    const now = new Date()
-    const nextDay = new Date(now.getTime() + 86400000)
-    return {
-      today: now.toISOString().split('T')[0],
-      tomorrow: nextDay.toISOString().split('T')[0],
-    }
-  }, [])
-
-  const [filters, setFilters] = useState({
-    checkIn:  searchParams.get('checkIn')  || '',
-    checkOut: searchParams.get('checkOut') || '',
-    guests:   searchParams.get('guests')   || '',
-    minPrice: '',
-    maxPrice: '',
-  })
-
-  const fetchRooms = useCallback(async (f) => {
-    setLoading(true)
-    setError('')
+  const fetch = useCallback(async ff => {
+    setLoading(true); setError("")
     try {
-      const params = {}
-      if (f.checkIn)  params.checkIn  = f.checkIn
-      if (f.checkOut) params.checkOut = f.checkOut
-      if (f.guests)   params.guests   = f.guests
-      if (f.minPrice) params.minPrice = f.minPrice
-      if (f.maxPrice) params.maxPrice = f.maxPrice
+      const p={}; if(ff.checkIn)p.checkIn=ff.checkIn; if(ff.checkOut)p.checkOut=ff.checkOut; if(ff.guests)p.guests=ff.guests; if(ff.minPrice)p.minPrice=ff.minPrice; if(ff.maxPrice)p.maxPrice=ff.maxPrice
+      const res = (ff.checkIn&&ff.checkOut) ? await roomsApi.search(p) : await roomTypesApi.getAll(p)
+      setRooms(res.data.data)
+    } catch(e){ setError(e.response?.data?.message||"Failed to load rooms. Is the server running?") }
+    finally{ setLoading(false) }
+  },[])
 
-      // If dates provided, search for availability; otherwise list all types
-      let data
-      if (f.checkIn && f.checkOut) {
-        const res = await roomsApi.search(params)
-        data = res.data.data
-      } else {
-        const res = await roomTypesApi.getAll(params)
-        data = res.data.data
-      }
-      setRooms(data)
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load rooms. Is the server running?')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  useEffect(()=>{ fetch(f) },[]) // eslint-disable-line
 
-  useEffect(() => { fetchRooms(filters) }, []) // eslint-disable-line
-
-  const handleSearch = (e) => {
-    e.preventDefault()
-    const newParams = {}
-    if (filters.checkIn)  newParams.checkIn  = filters.checkIn
-    if (filters.checkOut) newParams.checkOut = filters.checkOut
-    if (filters.guests)   newParams.guests   = filters.guests
-    setSearchParams(newParams)
-    fetchRooms(filters)
-  }
-
-  const hasDateSearch = filters.checkIn && filters.checkOut
+  const go = e => { e.preventDefault(); const np={}; if(f.checkIn)np.checkIn=f.checkIn; if(f.checkOut)np.checkOut=f.checkOut; if(f.guests)np.guests=f.guests; setSp(np); fetch(f) }
+  const clear = () => { const empty={checkIn:"",checkOut:"",guests:"",minPrice:"",maxPrice:""}; setF(empty); setSp({}); fetch(empty) }
 
   return (
-    <div style={s.page}>
-      {/* Page header */}
-      <div style={s.header}>
+    <div>
+      <div className="page-hero">
         <div className="container">
-          <h1 style={s.h1}>Room Catalog</h1>
-          <p style={s.subtitle}>Find the perfect room for your stay</p>
+          <div className="page-hero-eyebrow">Rooms &amp; Suites</div>
+          <h1>Discover Your Perfect Room</h1>
+          <p>Curated luxury for every occasion</p>
         </div>
       </div>
 
-      <div className="container" style={s.layout}>
-        {/* Filters sidebar */}
-        <aside style={s.sidebar}>
-          <form onSubmit={handleSearch}>
-            <div style={s.filterCard}>
-              <h3 style={s.filterTitle}>Search & Filter</h3>
-
-              <div className="form-group">
-                <label className="form-label">Check In</label>
-                <input type="date" className="form-control" min={today}
-                  value={filters.checkIn}
-                  onChange={(e) => setFilters({ ...filters, checkIn: e.target.value })} />
+      <div className="container" style={{display:"grid",gridTemplateColumns:"280px 1fr",gap:"2rem",padding:"2.5rem 1.5rem 4rem",alignItems:"start"}}>
+        <aside style={{position:"sticky",top:"88px"}}>
+          <form onSubmit={go} style={{background:"#fff",border:"1px solid #f0e8df",borderRadius:16,padding:"1.5rem"}}>
+            <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1rem",color:"#0f1c2e",marginBottom:"1.25rem",paddingBottom:".75rem",borderBottom:"1px solid #f0e8df"}}>Search &amp; Filter</h3>
+            {[["Check In","checkIn","date",today],["Check Out","checkOut","date",f.checkIn||today]].map(([l,n,t,m])=>(
+              <div className="form-group" key={n}>
+                <label className="form-label">{l}</label>
+                <input type={t} min={m} className="form-control" value={f[n]} onChange={e=>setF({...f,[n]:e.target.value})} />
               </div>
-
-              <div className="form-group">
-                <label className="form-label">Check Out</label>
-                <input type="date" className="form-control" min={filters.checkIn || tomorrow}
-                  value={filters.checkOut}
-                  onChange={(e) => setFilters({ ...filters, checkOut: e.target.value })} />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Guests</label>
-                <select className="form-control" value={filters.guests}
-                  onChange={(e) => setFilters({ ...filters, guests: e.target.value })}>
-                  <option value="">Any</option>
-                  {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Min Price (ETB/night)</label>
-                <input type="number" className="form-control" placeholder="0"
-                  min="0" value={filters.minPrice}
-                  onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })} />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Max Price (ETB/night)</label>
-                <input type="number" className="form-control" placeholder="Any"
-                  min="0" value={filters.maxPrice}
-                  onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })} />
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-                {hasDateSearch ? '🔍 Check Availability' : '🔍 Search Rooms'}
-              </button>
-
-              {(filters.checkIn || filters.checkOut || filters.guests || filters.minPrice || filters.maxPrice) && (
-                <button type="button" className="btn btn-outline" style={{ width: '100%', marginTop: '0.5rem' }}
-                  onClick={() => { setFilters({ checkIn: '', checkOut: '', guests: '', minPrice: '', maxPrice: '' }); fetchRooms({}) }}>
-                  Clear Filters
-                </button>
-              )}
+            ))}
+            <div className="form-group">
+              <label className="form-label">Guests</label>
+              <select className="form-control" value={f.guests} onChange={e=>setF({...f,guests:e.target.value})}>
+                <option value="">Any</option>
+                {[1,2,3,4,5,6].map(n=><option key={n} value={n}>{n}</option>)}
+              </select>
             </div>
+            <div className="form-group">
+              <label className="form-label">Min Price (ETB)</label>
+              <input type="number" className="form-control" min="0" placeholder="0" value={f.minPrice} onChange={e=>setF({...f,minPrice:e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Max Price (ETB)</label>
+              <input type="number" className="form-control" min="0" placeholder="Any" value={f.maxPrice} onChange={e=>setF({...f,maxPrice:e.target.value})} />
+            </div>
+            <button type="submit" className="btn btn-navy btn-block">Search Rooms</button>
+            {(f.checkIn||f.checkOut||f.guests||f.minPrice||f.maxPrice)&&<button type="button" className="btn btn-ghost btn-block" style={{marginTop:".6rem"}} onClick={clear}>Clear Filters</button>}
           </form>
         </aside>
 
-        {/* Results */}
         <main>
-          {hasDateSearch && (
-            <div style={s.searchInfo}>
-              <strong>Showing availability:</strong> {filters.checkIn} → {filters.checkOut}
-              {filters.guests && ` · ${filters.guests} guest${filters.guests > 1 ? 's' : ''}`}
+          {loading&&<div className="spinner-container"><div className="spinner"/></div>}
+          {error&&<div className="alert alert-error">{error}</div>}
+          {!loading&&!error&&<p style={{fontSize:".88rem",color:"#718096",marginBottom:"1.1rem"}}>{rooms.length} room type{rooms.length!==1?"s":""} found</p>}
+          {!loading&&!error&&rooms.length===0&&(
+            <div style={{textAlign:"center",padding:"4rem 2rem",background:"#fff",borderRadius:16,border:"1px solid #f0e8df"}}>
+              <span style={{fontSize:"3rem"}}>🏨</span>
+              <h3 style={{marginTop:".75rem"}}>No rooms found</h3>
+              <p style={{color:"#718096",marginTop:".5rem"}}>Try adjusting your dates or filters.</p>
+              <button onClick={clear} className="btn btn-gold" style={{marginTop:"1.25rem"}}>Clear Filters</button>
             </div>
           )}
-
-          {loading && <div className="spinner-container"><div className="spinner" /></div>}
-
-          {error && <div className="alert alert-error">{error}</div>}
-
-          {!loading && !error && rooms.length === 0 && (
-            <div style={s.empty}>
-              <span style={{ fontSize: '3rem' }}>🏨</span>
-              <h3>No rooms found</h3>
-              <p>Try adjusting your dates or filters.</p>
-            </div>
-          )}
-
-          {!loading && !error && rooms.length > 0 && (
-            <>
-              <p style={s.resultCount}>{rooms.length} room type{rooms.length !== 1 ? 's' : ''} found</p>
-              <div className="grid-2" style={s.grid}>
-                {rooms.map((room) => (
-                  <RoomCard key={room._id} room={room}
-                    checkIn={filters.checkIn} checkOut={filters.checkOut} />
-                ))}
-              </div>
-            </>
+          {!loading&&!error&&rooms.length>0&&(
+            <div className="grid-2">{rooms.map(r=><RoomCard key={r._id} room={r} checkIn={f.checkIn} checkOut={f.checkOut} />)}</div>
           )}
         </main>
       </div>
     </div>
   )
-}
-
-const s = {
-  page:        { minHeight: '80vh' },
-  header:      { background: '#1a3c5e', padding: '2.5rem 0', marginBottom: '2.5rem' },
-  h1:          { color: '#fff', fontSize: '2rem', marginBottom: '0.4rem' },
-  subtitle:    { color: 'rgba(255,255,255,0.75)', fontSize: '1rem' },
-  layout:      { display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2rem', paddingBottom: '3rem', alignItems: 'start' },
-  sidebar:     { position: 'sticky', top: '80px' },
-  filterCard:  { background: '#fff', border: '1px solid #dee2e6', borderRadius: '12px', padding: '1.5rem' },
-  filterTitle: { fontSize: '1rem', fontWeight: '600', color: '#1a3c5e', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #dee2e6' },
-  searchInfo:  { background: '#e0f2fe', border: '1px solid #7dd3fc', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.25rem', fontSize: '0.9rem', color: '#075985' },
-  resultCount: { color: '#6c757d', fontSize: '0.88rem', marginBottom: '1rem' },
-  grid:        { gap: '1.5rem' },
-  empty:       { textAlign: 'center', padding: '4rem 2rem', color: '#6c757d', background: '#f8f9fa', borderRadius: '12px' },
 }

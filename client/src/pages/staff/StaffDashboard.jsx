@@ -1,4 +1,3 @@
-import React from 'react'
 import { NavLink, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import StaffOverview      from './StaffOverview'
@@ -8,8 +7,7 @@ import HousekeepingBoard  from './HousekeepingBoard'
 import ReportsPage        from './ReportsPage'
 
 export default function StaffDashboard() {
-  const { user, logout } = useAuth()
-  const isAdmin   = ['admin'].includes(user?.role)
+  const { user } = useAuth()
   const isManager = ['admin', 'manager'].includes(user?.role)
 
   return (

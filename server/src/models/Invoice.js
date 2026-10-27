@@ -112,7 +112,6 @@ const invoiceSchema = new mongoose.Schema(
 );
 
 // ─── Indexes ──────────────────────────────────────────────────────────────────
-invoiceSchema.index({ booking: 1 }); // unique already, but explicit index helps
 invoiceSchema.index({ issuedAt: -1 });
 
 invoiceSchema.set('toJSON', {

@@ -1,94 +1,63 @@
-import { useState } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+﻿import { useState } from "react"
+import { Link, useNavigate, useLocation } from "react-router-dom"
+import { useAuth } from "../../context/AuthContext"
 
 export default function LoginPage() {
-  const { login } = useAuth()
-  const navigate  = useNavigate()
-  const location  = useLocation()
-  const from      = location.state?.from || '/'
+  const { login }=useAuth(); const navigate=useNavigate(); const location=useLocation()
+  const from=location.state?.from||"/"
+  const [form,setForm]=useState({email:"",password:""}); const [err,setErr]=useState(""); const [loading,setLoading]=useState(false)
 
-  const [form,    setForm]    = useState({ email: '', password: '' })
-  const [error,   setError]   = useState('')
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+  const go = async e => {
+    e.preventDefault(); setErr(""); setLoading(true)
     try {
-      const user = await login(form.email, form.password)
-      // Redirect based on role
-      if (user.role === 'customer') navigate(from === '/' ? '/dashboard' : from, { replace: true })
-      else navigate('/staff', { replace: true })
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Login failed. Please try again.'
-      setError(msg)
-    } finally {
-      setLoading(false)
-    }
+      const u=await login(form.email,form.password)
+      navigate(u.role==="customer"?(from==="/"?"/dashboard":from):"/staff",{replace:true})
+    } catch(ex){ setErr(ex.response?.data?.message||"Login failed. Please try again.") }
+    finally{ setLoading(false) }
   }
 
   return (
-    <div style={s.page}>
-      <div style={s.card}>
-        <div style={s.cardHeader}>
-          <div style={s.logo}>🏨</div>
-          <h1 style={s.title}>Welcome Back</h1>
-          <p style={s.subtitle}>Sign in to manage your reservations</p>
+    <div style={{minHeight:"100vh",display:"grid",gridTemplateColumns:"1fr 1fr"}}>
+      <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f1c2e"}}>
+        <img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80" alt="Hotel lobby" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:.4}} onError={e=>{e.target.style.display="none"}} />
+        <div style={{position:"relative",zIndex:1,textAlign:"center",padding:"2rem"}}>
+          <div style={{color:"#c9a84c",fontSize:"3rem",marginBottom:"1rem"}}>♛</div>
+          <h2 style={{fontFamily:"'Playfair Display',serif",color:"#fff",fontSize:"2rem",marginBottom:".75rem"}}>Grand Horizon Hotel</h2>
+          <p style={{color:"rgba(255,255,255,.7)",fontSize:"1rem",fontStyle:"italic"}}>Your Home Away From Home</p>
         </div>
-
-        <div style={s.body}>
-          {error && <div className="alert alert-error">{error}</div>}
-
-          <form onSubmit={handleSubmit}>
+        <style>{`@media(max-width:768px){.login-left{display:none!important}}`}</style>
+      </div>
+      <div className="login-left" style={{display:"flex",alignItems:"center",justifyContent:"center",background:"#fdf8f0",padding:"2rem"}}>
+        <div style={{background:"#fff",borderRadius:20,padding:"2.5rem",width:"100%",maxWidth:420,boxShadow:"0 20px 60px rgba(15,28,46,.12)"}}>
+          <div style={{textAlign:"center",marginBottom:"2rem"}}>
+            <div style={{color:"#c9a84c",fontSize:"2rem",marginBottom:".5rem"}}>♛</div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",color:"#0f1c2e",fontSize:"1.6rem",marginBottom:".4rem"}}>Welcome Back</h2>
+            <p style={{color:"#718096",fontSize:".9rem"}}>Sign in to manage your reservations</p>
+          </div>
+          {err&&<div className="alert alert-error">{err}</div>}
+          <form onSubmit={go}>
             <div className="form-group">
               <label className="form-label">Email Address</label>
-              <input type="email" className="form-control" required placeholder="your@email.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <input type="email" className="form-control" required placeholder="your@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} />
             </div>
-
             <div className="form-group">
               <label className="form-label">Password</label>
-              <input type="password" className="form-control" required placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              <input type="password" className="form-control" required placeholder="••••••••" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} />
             </div>
-
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem' }}
-              disabled={loading}>
-              {loading ? 'Signing in…' : 'Sign In'}
-            </button>
+            <button type="submit" className="btn btn-gold btn-block btn-lg" style={{marginTop:".5rem"}} disabled={loading}>{loading?"Signing in…":"Sign In"}</button>
           </form>
-
-          <p style={s.switchText}>
-            Don&apos;t have an account? <Link to="/register">Create one</Link>
-          </p>
-
-          {/* Dev helper */}
-          <details style={s.devHint}>
-            <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: '#6c757d' }}>🔧 Dev credentials</summary>
-            <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: '#6c757d', lineHeight: '1.7' }}>
-              <strong>Admin:</strong> admin@grandhorizon.example / Admin@12345<br />
-              <strong>Staff:</strong> receptionist@grandhorizon.example / Staff@12345<br />
-              <em>Run <code>node src/scripts/seed.js</code> in the server folder to create these accounts.</em>
+          <p style={{textAlign:"center",fontSize:".88rem",color:"#718096",marginTop:"1.5rem"}}>Don't have an account? <Link to="/register" style={{color:"#c9a84c",fontWeight:600}}>Create one</Link></p>
+          <details style={{marginTop:"1.5rem",padding:".75rem",background:"#fdf8f0",borderRadius:8,border:"1px solid #f0e8df"}}>
+            <summary style={{cursor:"pointer",fontSize:".78rem",color:"#718096"}}>🔧 Dev credentials</summary>
+            <div style={{marginTop:".5rem",fontSize:".78rem",color:"#718096",lineHeight:1.8}}>
+              <strong>Admin:</strong> admin@grandhorizon.example / Admin@12345<br/>
+              <strong>Staff:</strong> receptionist@grandhorizon.example / Staff@12345<br/>
+              <em>Run <code>node src/scripts/seed.js</code> in server/ first.</em>
             </div>
           </details>
         </div>
       </div>
+      <style>{`@media(max-width:768px){div[style*="grid-template-columns"]{grid-template-columns:1fr!important}}`}</style>
     </div>
   )
-}
-
-const s = {
-  page:      { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #1a3c5e 0%, #2d5a8e 100%)', padding: '2rem' },
-  card:      { background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', overflow: 'hidden' },
-  cardHeader:{ background: '#1a3c5e', padding: '2rem 2rem 1.5rem', textAlign: 'center' },
-  logo:      { fontSize: '2.5rem', marginBottom: '0.5rem' },
-  title:     { color: '#fff', fontSize: '1.5rem', marginBottom: '0.25rem' },
-  subtitle:  { color: 'rgba(255,255,255,0.7)', fontSize: '0.88rem' },
-  body:      { padding: '2rem' },
-  switchText:{ textAlign: 'center', fontSize: '0.88rem', color: '#6c757d', marginTop: '1.5rem' },
-  devHint:   { marginTop: '1.5rem', padding: '0.75rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #dee2e6' },
 }

@@ -96,10 +96,12 @@ const authRoutes = require('./routes/auth.routes');
 // Module 3 — Room Catalog
 const roomTypeRoutes = require('./routes/roomType.routes');
 const roomRoutes = require('./routes/room.routes');
+const bookingRoutes    = require('./routes/booking.routes');
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/room-types', roomTypeRoutes);
 app.use('/api/v1/rooms', roomRoutes);
+app.use('/api/v1/bookings', bookingRoutes);
 
 // Future routes (uncommented as each module is built):
 // const bookingRoutes      = require('./routes/booking.routes');
